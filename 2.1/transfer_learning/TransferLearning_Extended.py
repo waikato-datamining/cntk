@@ -8,7 +8,7 @@ from __future__ import print_function
 import numpy as np
 import os
 from cntk import load_model
-from TransferLearning import *
+from . TransferLearning import *
 
 
 # define base model location and characteristics
