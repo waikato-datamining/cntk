@@ -35,7 +35,6 @@ last_hidden_node_name = None
 image_height = None
 image_width = None
 num_channels = None
-tl_model_file = None
 features_stream_name = None
 label_stream_name = None
 new_output_node_name = None
@@ -52,7 +51,7 @@ train_image_folder = None
 test_image_folder = None
 file_endings = None
 
-# model
+# training output
 results_file = None
 new_model_file = None
 
@@ -80,7 +79,6 @@ def reset_vars():
     global prediction_in
     global prediction_out
     global prediction
-    global tl_model_file
     global features_stream_name
     global label_stream_name
     global new_output_node_name
@@ -91,17 +89,17 @@ def reset_vars():
     global l2_reg_weight
 
     base_model_file = os.path.join(base_folder, "..", "PretrainedModels", "ResNet_18.model")
+    # model setup
     feature_node_name = "features"
     last_hidden_node_name = "z.x"
     image_height = 224
     image_width = 224
     num_channels = 3
-    tl_model_file = os.path.join(base_folder, "Output", "TransferLearning.model")
     features_stream_name = 'features'
     label_stream_name = 'labels'
     new_output_node_name = "prediction"
 
-    # Learning parameters
+    # learning parameters
     max_epochs = 20
     mb_size = 50
     lr_per_mb = [0.2]*10 + [0.1]
@@ -113,7 +111,7 @@ def reset_vars():
     test_image_folder = os.path.join(base_folder, "..", "DataSets", "Animals", "Test")
     file_endings = ['.jpg', '.JPG', '.jpeg', '.JPEG', '.png', '.PNG']
 
-    # model
+    # training output
     results_file = os.path.join(base_folder, "Output", "predictions.txt")
     new_model_file = os.path.join(base_folder, "Output", "TransferLearning.model")
 
@@ -143,7 +141,6 @@ def cfg_from_file(cfg):
     global new_model_file
     global prediction_in
     global prediction_out
-    global tl_model_file
     global features_stream_name
     global label_stream_name
     global new_output_node_name
@@ -176,8 +173,6 @@ def cfg_from_file(cfg):
         results_file = config['results_file']
     if 'new_model_file' in config:
         new_model_file = config['new_model_file']
-    if 'tl_model_file' in config:
-        tl_model_file = config['tl_model_file']
     if 'features_stream_name' in config:
         features_stream_name = config['features_stream_name']
     if 'label_stream_name' in config:
@@ -457,7 +452,7 @@ def train_and_eval(_base_model_file, _train_image_folder, _test_image_folder, _r
 
     if not testing:
         trained_model.save(_new_model_file)
-        print("Stored trained model at %s" % tl_model_file)
+        print("Stored trained model at %s" % _new_model_file)
 
     # evaluate test images
     with open(_results_file, 'w') as output_file:
