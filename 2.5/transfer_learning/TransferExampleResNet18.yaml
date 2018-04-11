@@ -26,6 +26,7 @@ lr_per_mb:
   - 0.1
 momentum_per_mb: 0.9
 l2_reg_weight: 0.0005
+freeze: True
 
 # input files
 train_image_folder: '../../../CNTK-Samples-2-5/Examples/Image/DataSets/Animals/Train'

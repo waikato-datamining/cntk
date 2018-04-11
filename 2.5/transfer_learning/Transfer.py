@@ -15,7 +15,6 @@ from PIL import Image
 import cntk
 from cntk import load_model, placeholder, Constant
 from cntk import Trainer, UnitType
-from cntk.logging.graph import find_by_name, find_by_uid, depth_first_search
 from cntk.io import MinibatchSource, ImageDeserializer, StreamDefs, StreamDef
 import cntk.io.transforms as xforms
 from cntk.layers import Dense
@@ -47,6 +46,7 @@ mb_size = None
 lr_per_mb = None
 momentum_per_mb = None
 l2_reg_weight = None
+freeze = None
 
 # input files
 train_image_folder = None
@@ -82,6 +82,7 @@ def reset_vars():
     global lr_per_mb
     global momentum_per_mb
     global l2_reg_weight
+    global freeze
     global train_image_folder
     global test_image_folder
     global file_endings
@@ -109,6 +110,7 @@ def reset_vars():
     lr_per_mb = [0.2]*10 + [0.1]
     momentum_per_mb = 0.9
     l2_reg_weight = 0.0005
+    freeze = True
 
     # input files
     train_image_folder = os.path.join(base_folder, "..", "DataSets", "Animals", "Train")
@@ -147,6 +149,7 @@ def cfg_from_file(cfg):
     global lr_per_mb
     global momentum_per_mb
     global l2_reg_weight
+    global freeze
     global train_image_folder
     global test_image_folder
     global file_endings
@@ -183,6 +186,8 @@ def cfg_from_file(cfg):
         momentum_per_mb = float(config['momentum_per_mb'])
     if 'l2_reg_weight' in config:
         l2_reg_weight = float(config['l2_reg_weight'])
+    if 'freeze' in config:
+        freeze = bool(config['freeze'])
     if 'train_image_folder' in config:
         train_image_folder = config['train_image_folder']
     if 'test_image_folder' in config:
@@ -262,8 +267,8 @@ def init_vars(args):
 def create_mb_source(map_file, image_width, image_height, num_channels, num_classes, randomize=True):
     transforms = [xforms.scale(width=image_width, height=image_height, channels=num_channels, interpolations='linear')]
     return MinibatchSource(ImageDeserializer(map_file, StreamDefs(
-            features =StreamDef(field='image', transforms=transforms),
-            labels   =StreamDef(field='label', shape=num_classes))),
+            features=StreamDef(field='image', transforms=transforms),
+            labels=StreamDef(field='label', shape=num_classes))),
             randomize=randomize)
 
 
@@ -294,9 +299,9 @@ def create_model(base_model_file, feature_node_name, last_hidden_node_name, num_
         {feature_node: placeholder(name='features')})
 
     # Add new dense layer for class prediction
-    feat_norm  = input_features - Constant(114)
+    feat_norm = input_features - Constant(114)
     cloned_out = cloned_layers(feat_norm)
-    z          = Dense(num_classes, activation=None, name=new_output_node_name) (cloned_out)
+    z = Dense(num_classes, activation=None, name=new_output_node_name) (cloned_out)
 
     return z
 
@@ -342,7 +347,7 @@ def train_model(base_model_file, feature_node_name, last_hidden_node_name,
             trainer.train_minibatch(data)                                    # update model with it
             sample_count += trainer.previous_minibatch_sample_count          # count samples processed so far
             if sample_count % (100 * mb_size) == 0:
-                print ("Processed {0} samples".format(sample_count))
+                print("Processed {0} samples".format(sample_count))
 
         trainer.summarize_training_progress()
 
@@ -405,7 +410,7 @@ def eval_test_images(loaded_model, output_file, test_map_file, image_width, imag
                 if pred_count >= num_images:
                     break
 
-    print ("{0} out of {1} predictions were correct {2}.".format(correct_count, pred_count, (float(correct_count) / pred_count)))
+    print("{0} out of {1} predictions were correct {2}.".format(correct_count, pred_count, (float(correct_count) / pred_count)))
 
 
 def create_map_file_from_folder(root_folder, class_mapping, include_unknown=False):
@@ -426,7 +431,7 @@ def create_map_file_from_folder(root_folder, class_mapping, include_unknown=Fals
                 lines.append("{0}\t-1\n".format(filename))
 
     lines.sort()
-    with open(map_file_name , 'w') as map_file:
+    with open(map_file_name, 'w') as map_file:
         for line in lines:
             map_file.write(line)
 
@@ -457,7 +462,7 @@ def format_output_line(img_name, true_class, probs, class_mapping, top_n=3):
     return line
 
 
-def train_and_eval(_base_model_file, _train_image_folder, _test_image_folder, _results_file, _new_model_file, testing = False):
+def train_and_eval(_base_model_file, _train_image_folder, _test_image_folder, _results_file, _new_model_file, testing=False):
     # check for model and data existence
     if not (os.path.exists(_base_model_file) and os.path.exists(_train_image_folder) and os.path.exists(_test_image_folder)):
         print("Please run 'python install_data_and_model.py' first to get the required data and model.")
@@ -472,7 +477,7 @@ def train_and_eval(_base_model_file, _train_image_folder, _test_image_folder, _r
     # train
     trained_model = train_model(_base_model_file, feature_node_name, last_hidden_node_name,
                                 image_width, image_height, num_channels,
-                                len(class_mapping), train_map_file, num_epochs=30, freeze=True)
+                                len(class_mapping), train_map_file, num_epochs=max_epochs, freeze=freeze)
 
     if not testing:
         trained_model.save(_new_model_file)
@@ -516,7 +521,7 @@ def predict(new_model_file, prediction_in, prediction_out):
     print("Entering prediction mode...")
     while True:
         # only supported extensions
-        files = [(prediction_in + os.sep + x) for x in os.listdir(prediction_in) if  os.path.splitext(x)[1] in file_endings]
+        files = [(prediction_in + os.sep + x) for x in os.listdir(prediction_in) if os.path.splitext(x)[1] in file_endings]
 
         # no files present?
         if len(files) == 0:
