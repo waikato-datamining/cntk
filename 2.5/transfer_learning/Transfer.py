@@ -274,14 +274,14 @@ def create_model(base_model_file, feature_node_name, last_hidden_node_name, num_
     # feature node
     feature_node = find_by_name(base_model, feature_node_name)
     if feature_node is None:
-        feature_node = find_by_uid(base_model, feature_node_name)
+        feature_node = find_by_uid(base_model, feature_node_name, depth=-1)
     if feature_node is None:
         raise Exception("Failed to locate feature node: " + feature_node_name)
     print("feature node", feature_node)
     # last hidden node
     last_node = find_by_name(base_model, last_hidden_node_name)
     if last_node is None:
-        last_node = find_by_uid(base_model, last_hidden_node_name)
+        last_node = find_by_uid(base_model, last_hidden_node_name, depth=-1)
     if last_node is None:
         raise Exception("Failed to locate last hidden node: " + last_hidden_node_name)
     print("last hidden node", last_node)
