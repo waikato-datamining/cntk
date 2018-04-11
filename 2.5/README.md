@@ -10,7 +10,7 @@ Collection of modified CNTK 2.5 scripts.
   virtualenv -p /usr/bin/python3.5 venv
   ``` 
   
-* install CNTK for either ([source](https://docs.microsoft.com/en-us/cognitive-toolkit/Setup-Linux-Python?tabs=cntkpy25)
+* install CNTK for either ([source](https://docs.microsoft.com/en-us/cognitive-toolkit/Setup-Linux-Python?tabs=cntkpy25))
 
   * CPU only (not all scripts are supported on CPU)
   
