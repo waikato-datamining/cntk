@@ -9,10 +9,15 @@ def output_info(model_file):
     :param model_file: the model file to load
     :type model_file: str
     """
-    print("\n" + m + "\n")
+    print("\n" + m)
     model = cntk.load_model(model_file)
+    print("\nOutputs:")
     for output in cntk.logging.get_node_outputs(model):
         print(output)
+
+    print("\nVariables:")
+    for block in cntk.logging.graph.depth_first_search(model, (lambda x: type(x) == cntk.Variable)):
+        print(block)
 
 if __name__ == '__main__':
     if len(sys.argv) == 1:
