@@ -13,11 +13,11 @@ def output_info(model_file):
     model = cntk.load_model(model_file)
     print("\nOutputs:")
     for output in cntk.logging.get_node_outputs(model):
-        print(output)
+        print(output, "- UID:", output.uid)
 
     print("\nVariables:")
     for block in cntk.logging.graph.depth_first_search(model, (lambda x: type(x) == cntk.Variable)):
-        print(block)
+        print(block, "- UID:", block.uid)
 
 if __name__ == '__main__':
     if len(sys.argv) == 1:
