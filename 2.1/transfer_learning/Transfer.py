@@ -513,6 +513,26 @@ def predict(new_model_file, prediction_in, prediction_out):
             img_path = prediction_out + os.sep + os.path.basename(f)
             pred_path = prediction_out + os.sep + os.path.splitext(os.path.basename(f))[0] + ".json"
 
+            try:
+                # delete any existing old files in output dir
+                if os.path.exists(img_path):
+                    try:
+                        os.remove(img_path)
+                    except:
+                        print("Failed to remove existing image in output directory: ", img_path)
+                if os.path.exists(pred_path):
+                    try:
+                        os.remove(pred_path)
+                    except:
+                        print("Failed to remove existing prediction file in output directory: ", pred_path)
+                # move into output dir
+                os.rename(f, img_path)
+            except:
+                img_path = None
+
+            if img_path is None:
+                continue
+
             probs = eval_single_image(trained_model, img_path, image_width, image_height)
             formatted_line = format_output_line(img_path, "?", probs, class_mapping)
             with open(pred_path, 'w') as pred_file:
