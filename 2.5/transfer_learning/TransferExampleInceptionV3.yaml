@@ -1,7 +1,7 @@
 # model setup
 base_model_file: '../../../CNTK-Samples-2-5/Examples/Image/PretrainedModels/InceptionV3_ImageNet_CNTK.model'
 feature_node_name: 'features'
-last_hidden_node_name: 'Block93046_Output_0'
+last_hidden_node_name: 'Input3'
 image_height: 299
 image_width: 299
 num_channels: 3
