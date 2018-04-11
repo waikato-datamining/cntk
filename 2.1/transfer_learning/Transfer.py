@@ -491,12 +491,15 @@ def predict(new_model_file, prediction_in, prediction_out):
     """
 
     # load model and class mapping
+    print("Loading model...")
     trained_model = C.load_model(new_model_file)
+    print("Loading class mapping...")
     class_mapping = np.genfromtxt(class_map_file, dtype="str")
 
+    print("Entering prediction mode...")
     while True:
         # only supported extensions
-        files = [(prediction_in + os.sep + x) for x in os.listdir(prediction_in) if x in file_endings]
+        files = [(prediction_in + os.sep + x) for x in os.listdir(prediction_in) if  os.path.splitext(x)[1] in file_endings]
 
         # no files present?
         if len(files) == 0:
