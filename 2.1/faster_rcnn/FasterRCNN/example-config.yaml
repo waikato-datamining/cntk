@@ -1,0 +1,7 @@
+CNTK:
+    DATASET: "Kiwifruit_popcorn3"
+    BASE_MODEL: "AlexNet"
+    E2E_MAX_EPOCHS: 1
+    PRETRAINED_MODELS: "C:/Users/Administrator/zespri/pretrained"
+    MAP_FILE_PATH: "C:/Users/Administrator/zespri/datasets/kiwifruit_popcorn3"
+    OUTPUT_PATH: "C:/Users/Administrator/zespri/models/kiwifruit_popcorn3-test"

@@ -1,0 +1,6 @@
+pyyaml
+easydict
+opencv-python
+pydot-ng
+pillow
+matplotlib
