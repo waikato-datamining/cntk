@@ -1,8 +1,8 @@
 # Tools 2.1
 
-## Model info
+## model_info
 
-Simply prints the outputs of the supplied model to stdout.
+Simply prints the outputs of the supplied model(s) to stdout.
 
 The following command:
 
@@ -20,4 +20,12 @@ Output('z', [#, ], [1000])
 Output('ce', [], [])
 Output('z', [#, ], [1000])
 Output('z.PlusArgs[0]', [#, ], [1000])
+```
+
+## onnx_to_cntk
+
+Converts an ONNX model into a native CNTK one.
+
+```bash
+python onnx_to_cntk.py onnx.model cntk.model 
 ```
