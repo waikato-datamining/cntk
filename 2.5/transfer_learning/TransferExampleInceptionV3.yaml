@@ -1,5 +1,5 @@
 # model setup
-base_model_file: '../../../CNTK-Samples-2-5/Examples/Image/PretrainedModels/ResNet_18.model'
+base_model_file: '../../../CNTK-Samples-2-5/Examples/Image/PretrainedModels/InceptionV3_ImageNet_CNTK.model'
 feature_node_name: 'features'
 last_hidden_node_name: 'Block93046_Output_0'
 image_height: 299
