@@ -1,4 +1,6 @@
-# Model info 2.1
+# Tools 2.1
+
+## Model info
 
 Simply prints the outputs of the supplied model to stdout.
 
