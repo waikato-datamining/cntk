@@ -2,7 +2,7 @@
 
 ## Model info
 
-Simply prints the outputs of the supplied model to stdout.
+Simply prints the outputs of the supplied model(s) to stdout.
 
 The following command:
 
