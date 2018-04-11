@@ -5,8 +5,8 @@ last_hidden_node_name: 'Block93046_Output_0'
 image_height: 299
 image_width: 299
 num_channels: 3
-features_stream_name: 'Input3'
-label_stream_name: 'Input4'
+features_stream_name: 'features'
+label_stream_name: 'labels'
 new_output_node_name: 'prediction'
 
 # learning parameters
