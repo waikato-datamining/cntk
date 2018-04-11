@@ -17,7 +17,7 @@ https://github.com/Microsoft/CNTK/blob/master/PretrainedModels/download_model.py
 
 Examples:
 
-* [Inception v3](https://github.com/Microsoft/CNTK/blob/master/PretrainedModels/download_model.py)
+* [Inception v3](https://www.cntk.ai/Models/CNTK_Pretrained/InceptionV3_ImageNet_CNTK.model)
 * [ResNet 18](https://www.cntk.ai/Models/CNTK_Pretrained/ResNet18_ImageNet_CNTK.model)
 * [VGG 16](https://www.cntk.ai/Models/Caffe_Converted/VGG16_ImageNet_Caffe.model)
 
