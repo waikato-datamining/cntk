@@ -432,7 +432,7 @@ def format_output_line(img_name, true_class, probs, class_mapping, top_n=3):
     class_probs = np.column_stack((probs, class_mapping)).tolist()
     class_probs.sort(key=lambda x: float(x[0]), reverse=True)
     top_n = min(top_n, len(class_mapping)) if top_n > 0 else len(class_mapping)
-    if "true_class" == "?":
+    if true_class == "?":
         true_class_name = "?"
     else:
         true_class_name = class_mapping[true_class] if true_class >= 0 else 'unknown'
