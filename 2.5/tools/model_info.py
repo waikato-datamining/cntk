@@ -9,6 +9,7 @@ def output_info(model_file):
     :param model_file: the model file to load
     :type model_file: str
     """
+    print("\n" + m + "\n")
     model = cntk.load_model(model_file)
     for output in cntk.logging.get_node_outputs(model):
         print(output)
@@ -19,4 +20,5 @@ if __name__ == '__main__':
         print("E.g. /some/where/PretrainedModels/ResNet_18.model")
         exit(1)
 
-    output_info(sys.argv[1])
+    for m in sys.argv[1:]:
+        output_info(m)
