@@ -25,6 +25,8 @@ from cntk.ops.functions import CloneMethod
 from cntk.losses import cross_entropy_with_softmax
 from cntk.metrics import classification_error
 from cntk.logging import log_number_of_parameters, ProgressPrinter
+from datetime import datetime
+from time import sleep
 
 base_folder = os.path.dirname(os.path.abspath(__file__))
 
@@ -54,6 +56,7 @@ file_endings = None
 # training output
 results_file = None
 new_model_file = None
+class_map_file = None
 
 # prediction mode parameters
 prediction_in = None
@@ -71,14 +74,6 @@ def reset_vars():
     global image_height
     global image_width
     global num_channels
-    global train_image_folder
-    global test_image_folder
-    global file_endings
-    global results_file
-    global new_model_file
-    global prediction_in
-    global prediction_out
-    global prediction
     global features_stream_name
     global label_stream_name
     global new_output_node_name
@@ -87,6 +82,15 @@ def reset_vars():
     global lr_per_mb
     global momentum_per_mb
     global l2_reg_weight
+    global train_image_folder
+    global test_image_folder
+    global file_endings
+    global results_file
+    global new_model_file
+    global class_map_file
+    global prediction_in
+    global prediction_out
+    global prediction
 
     base_model_file = os.path.join(base_folder, "..", "PretrainedModels", "ResNet_18.model")
     # model setup
@@ -114,6 +118,7 @@ def reset_vars():
     # training output
     results_file = os.path.join(base_folder, "Output", "predictions.txt")
     new_model_file = os.path.join(base_folder, "Output", "TransferLearning.model")
+    class_map_file = None
 
     # prediction mode
     prediction_in = None
@@ -134,13 +139,6 @@ def cfg_from_file(cfg):
     global image_height
     global image_width
     global num_channels
-    global train_image_folder
-    global test_image_folder
-    global file_endings
-    global results_file
-    global new_model_file
-    global prediction_in
-    global prediction_out
     global features_stream_name
     global label_stream_name
     global new_output_node_name
@@ -149,6 +147,12 @@ def cfg_from_file(cfg):
     global lr_per_mb
     global momentum_per_mb
     global l2_reg_weight
+    global train_image_folder
+    global test_image_folder
+    global file_endings
+    global results_file
+    global new_model_file
+    global class_map_file
 
     config = yaml.load(open(cfg))
     if 'base_model_file' in config:
@@ -163,16 +167,6 @@ def cfg_from_file(cfg):
         image_width = int(config['image_width'])
     if 'num_channels' in config:
         num_channels = int(config['num_channels'])
-    if 'train_image_folder' in config:
-        train_image_folder = config['train_image_folder']
-    if 'test_image_folder' in config:
-        test_image_folder = config['test_image_folder']
-    if 'file_endings' in config:
-        file_endings = config['file_endings']
-    if 'results_file' in config:
-        results_file = config['results_file']
-    if 'new_model_file' in config:
-        new_model_file = config['new_model_file']
     if 'features_stream_name' in config:
         features_stream_name = config['features_stream_name']
     if 'label_stream_name' in config:
@@ -189,6 +183,18 @@ def cfg_from_file(cfg):
         momentum_per_mb = float(config['momentum_per_mb'])
     if 'l2_reg_weight' in config:
         l2_reg_weight = float(config['l2_reg_weight'])
+    if 'train_image_folder' in config:
+        train_image_folder = config['train_image_folder']
+    if 'test_image_folder' in config:
+        test_image_folder = config['test_image_folder']
+    if 'file_endings' in config:
+        file_endings = config['file_endings']
+    if 'results_file' in config:
+        results_file = config['results_file']
+    if 'new_model_file' in config:
+        new_model_file = config['new_model_file']
+    if 'class_map_file' in config:
+        class_map_file = config['class_map_file']
 
 
 def init_vars(args):
@@ -442,6 +448,7 @@ def train_and_eval(_base_model_file, _train_image_folder, _test_image_folder, _r
 
     # get class mapping and map files from train and test image folder
     class_mapping = create_class_mapping_from_folder(_train_image_folder)
+    np.savetxt(class_map_file, class_mapping, fmt="%s")
     train_map_file = create_map_file_from_folder(_train_image_folder, class_mapping)
     test_map_file = create_map_file_from_folder(_test_image_folder, class_mapping, include_unknown=True)
 
@@ -469,11 +476,53 @@ def train_and_eval(_base_model_file, _train_image_folder, _test_image_folder, _r
     print("Done. Wrote output to %s" % _results_file)
 
 
+def predict(new_model_file, prediction_in, prediction_out):
+    """
+    Use the trained model to make predictions on images that appear in the "prediction_in"
+    directory. Moves the incoming image into the "prediction_out" directory and places
+    a JSON file (same name, only different extension) with the prediction alongside.
+
+    :param new_model_file: the model to load
+    :type new_model_file: str
+    :param prediction_in: the directory for incoming images
+    :type prediction_in: str
+    :param prediction_out: the directory the processed images and the prediction files
+    :type prediction_out: str
+    """
+
+    # load model and class mapping
+    trained_model = C.load_model(new_model_file)
+    class_mapping = np.genfromtxt(class_map_file, dtype="str")
+
+    while True:
+        # only supported extensions
+        files = [(prediction_in + os.sep + x) for x in os.listdir(prediction_in) if x in file_endings]
+
+        # no files present?
+        if len(files) == 0:
+            sleep(1)
+            continue
+
+        for f in files:
+            start = datetime.now()
+            print(start, "-", f)
+
+            img_path = prediction_out + os.sep + os.path.basename(f)
+            pred_path = prediction_out + os.sep + os.path.splitext(os.path.basename(f))[0] + ".json"
+
+            probs = eval_single_image(trained_model, img_path, image_width, image_height)
+            formatted_line = format_output_line(img_path, "?", probs, class_mapping)
+            with open(pred_path, 'w') as pred_file:
+                pred_file.write(formatted_line)
+
+            timediff = datetime.now() - start
+            print("  time:", timediff)
+
+
 if __name__ == '__main__':
     reset_vars()
     init_vars(sys.argv[1:])
-    if not prediction:
-        train_and_eval(base_model_file, train_image_folder, test_image_folder, results_file, new_model_file)
+    if prediction:
+        predict(new_model_file, prediction_in, prediction_out)
     else:
-        # TODO perform predictions
-        pass
+        train_and_eval(base_model_file, train_image_folder, test_image_folder, results_file, new_model_file)

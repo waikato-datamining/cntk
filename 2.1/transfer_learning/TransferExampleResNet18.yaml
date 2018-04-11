@@ -41,3 +41,4 @@ file_endings:
 # training output
 results_file: './output/predictions.txt'
 new_model_file: './output/TransferLearning.model'
+class_map_file: './output/class_map.txt'
