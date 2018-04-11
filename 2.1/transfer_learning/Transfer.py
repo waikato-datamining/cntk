@@ -15,7 +15,7 @@ from PIL import Image
 import cntk
 from cntk import load_model, placeholder, Constant
 from cntk import Trainer, UnitType
-from cntk.logging.graph import find_by_name, get_node_outputs
+from cntk.logging.graph import find_by_name, find_by_uid
 from cntk.io import MinibatchSource, ImageDeserializer, StreamDefs, StreamDef
 import cntk.io.transforms as xforms
 from cntk.layers import Dense
@@ -270,9 +270,21 @@ def create_mb_source(map_file, image_width, image_height, num_channels, num_clas
 # Creates the network model for transfer learning
 def create_model(base_model_file, feature_node_name, last_hidden_node_name, num_classes, input_features, freeze=False):
     # Load the pretrained classification net and find nodes
-    base_model   = load_model(base_model_file)
+    base_model = load_model(base_model_file)
+    # feature node
     feature_node = find_by_name(base_model, feature_node_name)
-    last_node    = find_by_name(base_model, last_hidden_node_name)
+    if feature_node is None:
+        feature_node = find_by_uid(base_model, feature_node_name)
+    if feature_node is None:
+        raise Exception("Failed to located feature node: " + feature_node_name)
+    print("feature node", feature_node)
+    # last hidden node
+    last_node = find_by_name(base_model, last_hidden_node_name)
+    if last_node is None:
+        last_node = find_by_uid(base_model, last_hidden_node_name)
+    if last_node is None:
+        raise Exception("Failed to located last hidden node: " + last_hidden_node_name)
+    print("last hidden node", last_node)
 
     # Clone the desired layers with fixed weights
     cloned_layers = combine([last_node.owner]).clone(
