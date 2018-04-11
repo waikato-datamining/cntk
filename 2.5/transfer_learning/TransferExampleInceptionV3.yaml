@@ -1,0 +1,44 @@
+# model setup
+base_model_file: '../../../CNTK-Samples-2-5/Examples/Image/PretrainedModels/ResNet_18.model'
+feature_node_name: 'features'
+last_hidden_node_name: 'Block93046_Output_0'
+image_height: 299
+image_width: 299
+num_channels: 3
+features_stream_name: 'features'
+label_stream_name: 'labels'
+new_output_node_name: 'prediction'
+
+# learning parameters
+max_epochs: 20
+mb_size: 50
+lr_per_mb:
+  - 0.2
+  - 0.2
+  - 0.2
+  - 0.2
+  - 0.2
+  - 0.2
+  - 0.2
+  - 0.2
+  - 0.2
+  - 0.2
+  - 0.1
+momentum_per_mb: 0.9
+l2_reg_weight: 0.0005
+
+# input files
+train_image_folder: '../../../CNTK-Samples-2-5/Examples/Image/DataSets/Animals/Train'
+test_image_folder: '../../../CNTK-Samples-2-5/Examples/Image/DataSets/Animals/Test'
+file_endings:
+  - '.jpg'
+  - '.JPG'
+  - '.jpeg'
+  - '.JPEG'
+  - '.png'
+  - '.PNG'
+
+# training output
+results_file: './output/predictions.txt'
+new_model_file: './output/TransferLearning.model'
+class_map_file: './output/class_map.txt'
