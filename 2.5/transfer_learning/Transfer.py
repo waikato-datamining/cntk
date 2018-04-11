@@ -15,7 +15,7 @@ from PIL import Image
 import cntk
 from cntk import load_model, placeholder, Constant
 from cntk import Trainer, UnitType
-from cntk.logging.graph import find_by_name, find_by_uid
+from cntk.logging.graph import find_by_name, find_by_uid, depth_first_search
 from cntk.io import MinibatchSource, ImageDeserializer, StreamDefs, StreamDef
 import cntk.io.transforms as xforms
 from cntk.layers import Dense
@@ -271,20 +271,22 @@ def create_mb_source(map_file, image_width, image_height, num_channels, num_clas
 def create_model(base_model_file, feature_node_name, last_hidden_node_name, num_classes, input_features, freeze=False):
     # Load the pretrained classification net and find nodes
     base_model = load_model(base_model_file)
+    feature_node = None
+    last_node = None
     # feature node
-    feature_node = find_by_name(base_model, feature_node_name)
-    if feature_node is None:
-        feature_node = find_by_uid(base_model, feature_node_name, depth=-1)
+    for n in cntk.logging.graph.depth_first_search(base_model, (lambda x: True)):
+        if (n.name.strip() == feature_node_name) or (n.uid.strip() == feature_node_name):
+            feature_node = n
+    print("feature node:", feature_node)
     if feature_node is None:
         raise Exception("Failed to locate feature node: " + feature_node_name)
-    print("feature node", feature_node)
     # last hidden node
-    last_node = find_by_name(base_model, last_hidden_node_name)
-    if last_node is None:
-        last_node = find_by_uid(base_model, last_hidden_node_name, depth=-1)
+    for n in cntk.logging.get_node_outputs(base_model):
+        if (n.name.strip() == last_hidden_node_name) or (n.uid.strip() == last_hidden_node_name):
+            last_node = n
+    print("last hidden node:", last_node)
     if last_node is None:
         raise Exception("Failed to locate last hidden node: " + last_hidden_node_name)
-    print("last hidden node", last_node)
 
     # Clone the desired layers with fixed weights
     cloned_layers = combine([last_node.owner]).clone(
