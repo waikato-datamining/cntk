@@ -27,13 +27,13 @@ Steps:
 * create virtual environment
 
   ```
-  conda create --name cntk-py35 python=3.5 numpy scipy h5py jupyter
+  conda create --name cntk21-py35 python=3.5 numpy scipy h5py jupyter
   ```
 
 * activate environment
 
   ```
-  activate cntk-py35
+  activate cntk21-py35
   ```
   
 * install cntk
