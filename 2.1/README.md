@@ -6,7 +6,7 @@ Collection of modified CNTK 2.1 scripts.
 
 ### Windows
 
-Instructions taken from here:
+**Instructions taken from here:**
 
 https://docs.microsoft.com/en-us/cognitive-toolkit/setup-windows-python?tabs=cntkpy21
 
