@@ -111,10 +111,10 @@ def set_global_vars(use_arg_parser=True):
                             required=False, default=False)
         parser.add_argument('--prediction', action='store_true', help="Switches to prediction mode",
                             required=False, default=False)
-        parser.add_argument('--prediction_in', type=str, help="The input directory for images in prediction mode",
-                            required=False, default="")
-        parser.add_argument('--prediction_out', type=str, help="The output directory for processed images and predicitons in prediction mode",
-                            required=False, default="")
+        parser.add_argument('--prediction_in', action='append', type=str, help="The input directory for images in prediction mode. Can be supplied mulitple times.",
+                            required=False, default=list())
+        parser.add_argument('--prediction_out', action='append', type=str, help="The output directory for processed images and predicitons in prediction mode. Can be supplied mulitple times.",
+                            required=False, default=list())
         parser.add_argument('--no_headers', action='store_true', help="Whether to suppress the header row in the ROI CSV files",
                             required=False, default=False)
         parser.add_argument('--output_width_height', action='store_true', help="Whether to output width/height instead of second x/y in the ROI CSV files",
@@ -128,13 +128,22 @@ def set_global_vars(use_arg_parser=True):
         prediction = args['prediction']
         if prediction:
             prediction_in = args['prediction_in']
-            if not os.path.exists(prediction_in):
-                raise RuntimeError("Prediction input directory '%s' does not exist" % prediction_in)
+            if len(prediction_in) == 0:
+                raise RuntimeError("No prediction input directory provided!")
+            for p in prediction_in:
+                if not os.path.exists(p):
+                    raise RuntimeError("Prediction input directory '%s' does not exist" % p)
             prediction_out = args['prediction_out']
-            if not os.path.exists(prediction_out):
-                raise RuntimeError("Prediction output directory '%s' does not exist" % prediction_out)
-            if prediction_in == prediction_out:
-                raise RuntimeError("Input and output directories for prediction are the same: %s" % prediction_in)
+            if len(prediction_out) == 0:
+                raise RuntimeError("No prediction output directory provided!")
+            for p in prediction_out:
+                if not os.path.exists(p):
+                    raise RuntimeError("Prediction output directory '%s' does not exist" % p)
+            if len(prediction_in) != len(prediction_out):
+                raise RuntimeError("Number of input and output directories don't match: %i != %i" % (len(prediction_in), len(prediction_out)))
+            for i in range(len(prediction_in)):
+                if prediction_in[i] == prediction_out[i]:
+                    raise RuntimeError("Input and output directories #%i for prediction are the same: %s" % ((i+1), prediction_in[i]))
 
         if args['list_devices']:
             print("Available devices (Type - ID - description)")

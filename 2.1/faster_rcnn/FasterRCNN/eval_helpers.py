@@ -423,8 +423,8 @@ def faster_rcnn_pred(eval_model, prediction_in, prediction_out, class_map_file, 
     Performs predictions with a model in continuous mode.
 
     :param eval_model: the model to use
-    :param prediction_in: the input dir for images
-    :param prediction_out: the output dir for images and ROI CSV files
+    :param prediction_in: the input dir for images (list)
+    :param prediction_out: the output dir for images and ROI CSV files (list)
     :param class_map_file: the class map file to use
     :param img_shape: the shpage
     :param feature_node_name: the name of the feature node
@@ -445,73 +445,78 @@ def faster_rcnn_pred(eval_model, prediction_in, prediction_out, class_map_file, 
     frcn_eval = eval_model(image_input, dims_input)
 
     while True:
-        # only png and jpg files
-        files = [(prediction_in + os.sep + x) for x in os.listdir(prediction_in) if (x.lower().endswith(".png") or x.lower().endswith(".jpg"))]
+        # iterate directory pairs
+        for p in range(len(prediction_in)):
+            pred_in = prediction_in[p]
+            pred_out = prediction_out[p]
 
-        # no files present?
-        if len(files) == 0:
-            sleep(1)
-            continue
+            # only png and jpg files
+            files = [(pred_in + os.sep + x) for x in os.listdir(pred_in) if (x.lower().endswith(".png") or x.lower().endswith(".jpg"))]
 
-        for f in files:
-            start = datetime.now()
-            print(start, "-", f)
-
-            img_path = prediction_out + os.sep + os.path.basename(f)
-            roi_path = prediction_out + os.sep + os.path.splitext(os.path.basename(f))[0] + ".csv"
-
-            cntk_img_input = None
-            try:
-                _, cntk_img_input, dims = load_resize_and_pad(f, img_shape[2], img_shape[1])
-            except Exception as e:
-                print(str(e))
-
-            try:
-                # delete any existing old files in output dir
-                if os.path.exists(img_path):
-                    try:
-                        os.remove(img_path)
-                    except:
-                        print("Failed to remove existing image in output directory: ", img_path)
-                if os.path.exists(roi_path):
-                    try:
-                        os.remove(roi_path)
-                    except:
-                        print("Failed to remove existing ROI file in output directory: ", roi_path)
-                # move into output dir
-                os.rename(f, img_path)
-            except:
-                img_path = None
-
-            if cntk_img_input is None:
-                continue
-            if img_path is None:
+            # no files present?
+            if len(files) == 0:
+                sleep(1)
                 continue
 
-            dims_input = np.array(dims, dtype=np.float32)
-            dims_input.shape = (1,) + dims_input.shape
-            output = frcn_eval.eval({frcn_eval.arguments[0]: [cntk_img_input], frcn_eval.arguments[1]: dims_input})
+            for f in files:
+                start = datetime.now()
+                print(start, "-", f)
 
-            out_dict = dict([(k.name, k) for k in output])
-            out_cls_pred = output[out_dict['cls_pred']][0]
-            out_rpn_rois = output[out_dict['rpn_rois']][0]
-            out_bbox_regr = output[out_dict['bbox_regr']][0]
+                img_path = pred_out + os.sep + os.path.basename(f)
+                roi_path = pred_out + os.sep + os.path.splitext(os.path.basename(f))[0] + ".csv"
 
-            labels = out_cls_pred.argmax(axis=1)
-            scores = out_cls_pred.max(axis=1).tolist()
+                cntk_img_input = None
+                try:
+                    _, cntk_img_input, dims = load_resize_and_pad(f, img_shape[2], img_shape[1])
+                except Exception as e:
+                    print(str(e))
 
-            # apply regression and nms to bbox coordinates
-            regressed_rois = regress_rois(out_rpn_rois, out_bbox_regr, labels, dims)
-            nms_keep_indices = apply_nms_to_single_image_results(regressed_rois, labels, scores,
-                                                                 nms_threshold=nms_threshold,
-                                                                 conf_threshold=nms_conf_threshold)
+                try:
+                    # delete any existing old files in output dir
+                    if os.path.exists(img_path):
+                        try:
+                            os.remove(img_path)
+                        except:
+                            print("Failed to remove existing image in output directory: ", img_path)
+                    if os.path.exists(roi_path):
+                        try:
+                            os.remove(roi_path)
+                        except:
+                            print("Failed to remove existing ROI file in output directory: ", roi_path)
+                    # move into output dir
+                    os.rename(f, img_path)
+                except:
+                    img_path = None
 
-            save_rois_to_file(regressed_rois, nms_keep_indices, labels, str_labels, scores,
-                              prediction_out, img_path, headers=headers, output_width_height=output_width_height,
-                              suppressed_labels=suppressed_labels, dims=dims)
+                if cntk_img_input is None:
+                    continue
+                if img_path is None:
+                    continue
 
-            timediff = datetime.now() - start
-            print("  time:", timediff)
+                dims_input = np.array(dims, dtype=np.float32)
+                dims_input.shape = (1,) + dims_input.shape
+                output = frcn_eval.eval({frcn_eval.arguments[0]: [cntk_img_input], frcn_eval.arguments[1]: dims_input})
+
+                out_dict = dict([(k.name, k) for k in output])
+                out_cls_pred = output[out_dict['cls_pred']][0]
+                out_rpn_rois = output[out_dict['rpn_rois']][0]
+                out_bbox_regr = output[out_dict['bbox_regr']][0]
+
+                labels = out_cls_pred.argmax(axis=1)
+                scores = out_cls_pred.max(axis=1).tolist()
+
+                # apply regression and nms to bbox coordinates
+                regressed_rois = regress_rois(out_rpn_rois, out_bbox_regr, labels, dims)
+                nms_keep_indices = apply_nms_to_single_image_results(regressed_rois, labels, scores,
+                                                                     nms_threshold=nms_threshold,
+                                                                     conf_threshold=nms_conf_threshold)
+
+                save_rois_to_file(regressed_rois, nms_keep_indices, labels, str_labels, scores,
+                                  pred_out, img_path, headers=headers, output_width_height=output_width_height,
+                                  suppressed_labels=suppressed_labels, dims=dims)
+
+                timediff = datetime.now() - start
+                print("  time:", timediff)
 
 
 def load_class_labels(class_map_file):
