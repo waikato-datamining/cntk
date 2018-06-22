@@ -445,6 +445,8 @@ def faster_rcnn_pred(eval_model, prediction_in, prediction_out, class_map_file, 
     frcn_eval = eval_model(image_input, dims_input)
 
     while True:
+        any = False
+
         # iterate directory pairs
         for p in range(len(prediction_in)):
             pred_in = prediction_in[p]
@@ -452,11 +454,6 @@ def faster_rcnn_pred(eval_model, prediction_in, prediction_out, class_map_file, 
 
             # only png and jpg files
             files = [(pred_in + os.sep + x) for x in os.listdir(pred_in) if (x.lower().endswith(".png") or x.lower().endswith(".jpg"))]
-
-            # no files present?
-            if len(files) == 0:
-                sleep(1)
-                continue
 
             for f in files:
                 start = datetime.now()
@@ -517,6 +514,10 @@ def faster_rcnn_pred(eval_model, prediction_in, prediction_out, class_map_file, 
 
                 timediff = datetime.now() - start
                 print("  time:", timediff)
+
+        # nothing processed at all, lets wait for files to appear
+        if not any:
+            sleep(1)
 
 
 def load_class_labels(class_map_file):
