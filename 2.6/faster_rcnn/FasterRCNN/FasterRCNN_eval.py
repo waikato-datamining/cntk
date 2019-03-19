@@ -12,7 +12,7 @@ from utils.map_helpers import evaluate_detections
 from utils.plot_helpers import load_resize_and_pad
 from utils.rpn.bbox_transform import regress_rois
 from utils.od_mb_source import ObjectDetectionMinibatchSource
-from utils.nms.nms_wrapper import apply_nms_to_single_image_results
+from utils.nms_wrapper import apply_nms_to_single_image_results
 
 class FasterRCNN_Evaluator:
     def __init__(self, eval_model, cfg):
