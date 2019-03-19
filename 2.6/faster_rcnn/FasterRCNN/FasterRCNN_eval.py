@@ -109,7 +109,7 @@ def compute_test_set_aps(eval_model, cfg):
         regressed_rois = regress_rois(out_rpn_rois, out_bbox_regr, labels, mb_data[dims_input].asarray())
         nms_keep_indices = apply_nms_to_single_image_results(regressed_rois, labels, scores,
                                                              use_gpu_nms = cfg.USE_GPU_NMS,
-                                                             device_id = cfg.GPU_ID
+                                                             device_id = cfg.GPU_ID,
                                                              nms_threshold=cfg.RESULTS_NMS_THRESHOLD,
                                                              conf_threshold=cfg.RESULTS_NMS_CONF_THRESHOLD)
 
