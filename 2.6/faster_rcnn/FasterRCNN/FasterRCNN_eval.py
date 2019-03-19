@@ -113,11 +113,16 @@ def compute_test_set_aps(eval_model, cfg):
         labels = out_cls_pred.argmax(axis=1)
         scores = out_cls_pred.max(axis=1)
         regressed_rois = regress_rois(out_rpn_rois, out_bbox_regr, labels, mb_data[dims_input].asarray())
-        nms_keep_indices = apply_nms_to_single_image_results(regressed_rois, labels, scores,
+        nms_keep_indices = apply_nms_to_single_image_results(regressed_rois, labels, scores.tolist(),
                                                              use_gpu_nms = cfg.USE_GPU_NMS,
                                                              device_id = cfg.GPU_ID,
                                                              nms_threshold=cfg.RESULTS_NMS_THRESHOLD,
                                                              conf_threshold=cfg.RESULTS_NMS_CONF_THRESHOLD)
+        
+        img_path = img_file_names[img_i]
+        save_rois_to_file(regressed_rois, nms_keep_indices, labels, str_labels, scores.tolist(),
+                          results_base_path, img_path, headers=True, output_width_height=False,
+                          suppressed_labels=(), dims=None)
 
         labels.shape = labels.shape + (1,)
         scores.shape = scores.shape + (1,)
@@ -130,11 +135,6 @@ def compute_test_set_aps(eval_model, cfg):
 
         if (img_i+1) % 100 == 0:
             print("Processed {} samples".format(img_i+1))
-            
-        img_path = img_file_names[img_i]
-        save_rois_to_file(regressed_rois, nms_keep_indices, labels, str_labels, scores,
-                          results_base_path, img_path, headers=True, output_width_height=False,
-                          suppressed_labels=(), dims=None)
 
     # calculate mAP
     aps = evaluate_detections(all_boxes, all_gt_infos, classes,
@@ -174,8 +174,8 @@ def save_rois_to_file(regressed_rois, nms_keep_indices, labels, str_labels, scor
                 roi_file.write("file,x0,y0,x1,y1,label,label_str,score\n")
         # rois
         for index in nms_keep_indices:
-            #if str_labels[labels[index]] in suppressed_labels:
-            #    continue
+            if str_labels[labels[index]] in suppressed_labels:
+                continue
 
             # get coordinates
             x0 = regressed_rois[index][0]
