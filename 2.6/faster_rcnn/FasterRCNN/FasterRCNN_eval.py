@@ -174,8 +174,8 @@ def save_rois_to_file(regressed_rois, nms_keep_indices, labels, str_labels, scor
                 roi_file.write("file,x0,y0,x1,y1,label,label_str,score\n")
         # rois
         for index in nms_keep_indices:
-            if str_labels[labels[index]] in suppressed_labels:
-                continue
+            #if str_labels[labels[index]] in suppressed_labels:
+            #    continue
 
             # get coordinates
             x0 = regressed_rois[index][0]
