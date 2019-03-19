@@ -120,9 +120,10 @@ def compute_test_set_aps(eval_model, cfg):
                                                              conf_threshold=cfg.RESULTS_NMS_CONF_THRESHOLD)
         
         img_path = img_file_names[img_i]
+        _, cntk_img_input, dims = load_resize_and_pad(img_path, cfg.IMAGE_WIDTH, cfg.IMAGE_HEIGHT)
         save_rois_to_file(regressed_rois, nms_keep_indices, labels, str_labels, scores.tolist(),
                           results_base_path, img_path, headers=True, output_width_height=False,
-                          suppressed_labels=(), dims=None)
+                          suppressed_labels=(), dims=dims)
 
         labels.shape = labels.shape + (1,)
         scores.shape = scores.shape + (1,)
