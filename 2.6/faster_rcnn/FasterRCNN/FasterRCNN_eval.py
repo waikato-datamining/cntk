@@ -12,6 +12,7 @@ from utils.map_helpers import evaluate_detections
 from utils.plot_helpers import load_resize_and_pad
 from utils.rpn.bbox_transform import regress_rois
 from utils.od_mb_source import ObjectDetectionMinibatchSource
+from utils.nms.nms_wrapper import apply_nms_to_single_image_results
 
 class FasterRCNN_Evaluator:
     def __init__(self, eval_model, cfg):
@@ -46,6 +47,7 @@ class FasterRCNN_Evaluator:
         return out_cls_pred, out_rpn_rois, out_bbox_regr, dims
 
 def compute_test_set_aps(eval_model, cfg):
+    results_base_path = os.path.join(cfg.OUTPUT_PATH, cfg["DATA"].DATASET)
     num_test_images = cfg["DATA"].NUM_TEST_IMAGES
     classes = cfg["DATA"].CLASSES
     image_input = input_variable(shape=(cfg.NUM_CHANNELS, cfg.IMAGE_HEIGHT, cfg.IMAGE_WIDTH),
@@ -105,6 +107,9 @@ def compute_test_set_aps(eval_model, cfg):
         labels = out_cls_pred.argmax(axis=1)
         scores = out_cls_pred.max(axis=1)
         regressed_rois = regress_rois(out_rpn_rois, out_bbox_regr, labels, mb_data[dims_input].asarray())
+        nms_keep_indices = apply_nms_to_single_image_results(regressed_rois, labels, scores,
+                                                             nms_threshold=cfg.RESULTS_NMS_THRESHOLD,
+                                                             conf_threshold=cfg.RESULTS_NMS_CONF_THRESHOLD)
 
         labels.shape = labels.shape + (1,)
         scores.shape = scores.shape + (1,)
@@ -117,6 +122,10 @@ def compute_test_set_aps(eval_model, cfg):
 
         if (img_i+1) % 100 == 0:
             print("Processed {} samples".format(img_i+1))
+            
+        save_rois_to_file(regressed_rois, nms_keep_indices, labels, classes, scores,
+                          results_base_path, img_path, headers=True, output_width_height=False,
+                          suppressed_labels=(), dims=None)
 
     # calculate mAP
     aps = evaluate_detections(all_boxes, all_gt_infos, classes,
@@ -126,3 +135,76 @@ def compute_test_set_aps(eval_model, cfg):
                               conf_threshold = cfg.RESULTS_NMS_CONF_THRESHOLD)
 
     return aps
+
+def save_rois_to_file(regressed_rois, nms_keep_indices, labels, str_labels, scores, results_base_path, img_path,
+                      headers=True, output_width_height=False, suppressed_labels=(), dims=None):
+    """
+    Stores the ROIs in a CSV file.
+
+    :param regressed_rois: the ROIs to store
+    :param nms_keep_indices: the indices to keep
+    :param labels: the labels
+    :param str_labels: the string labels
+    :param scores: the scores
+    :param results_base_path: the base output directory
+    :param img_path: the image file
+    :param headers: whether to output the headers
+    :param output_width_height: whether to output x/y/width/height or x0/y0/x1/y1
+    :param suppressed_labels: the labels to keep from being output
+    :param dims: the image dimensions, as returned by "load_resize_and_pad":
+                 cntk_width, cntk_height, actual_cntk_width, actual_cntk_height, original_width, original_height
+    :return:
+    """
+    roi_path = "{}/{}-rois.csv".format(results_base_path, os.path.splitext(os.path.basename(img_path))[0])
+    with open(roi_path, "w") as roi_file:
+        # headers?
+        if headers:
+            if output_width_height:
+                roi_file.write("file,x,y,w,h,label,label_str,score\n")
+            else:
+                roi_file.write("file,x0,y0,x1,y1,label,label_str,score\n")
+        # rois
+        for index in nms_keep_indices:
+            if str_labels[labels[index]] in suppressed_labels:
+                continue
+
+            # get coordinates
+            x0 = regressed_rois[index][0]
+            y0 = regressed_rois[index][1]
+            x1 = regressed_rois[index][2]
+            y1 = regressed_rois[index][3]
+            w = x1 - x0 + 1
+            h = y1 - y0 + 1
+
+            # translate into realworld coordinates again
+            if dims is not None:
+                cntk_w, cntk_h, _, _, orig_w, orig_h = dims
+                aspect = orig_w / orig_h
+                cntk_act_h = round(cntk_w / aspect)
+                cntk_trans_w = 0
+                cntk_trans_h = -round((cntk_h - cntk_act_h) / 2)
+                cntk_scale = orig_w / cntk_w
+                # translate
+                x0 = x0 + cntk_trans_w
+                y0 = y0 + cntk_trans_h
+                x1 = x1 + cntk_trans_w
+                y1 = y1 + cntk_trans_h
+                # scale
+                x0 = x0 * cntk_scale
+                y0 = y0 * cntk_scale
+                x1 = x1 * cntk_scale
+                y1 = y1 * cntk_scale
+                w = w * cntk_scale
+                h = h * cntk_scale
+
+            # output
+            if output_width_height:
+                roi_file.write("{},{},{},{},{},{},{},{}\n".format(
+                    os.path.basename(img_path),
+                    x0, y0, w, h,
+                    labels[index], str_labels[labels[index]], scores[index]))
+            else:
+                roi_file.write("{},{},{},{},{},{},{},{}\n".format(
+                    os.path.basename(img_path),
+                    x0, y0, x1, y1,
+                    labels[index], str_labels[labels[index]], scores[index]))
