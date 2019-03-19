@@ -55,6 +55,7 @@ def compute_test_set_aps(eval_model, cfg):
     img_file_names = [os.path.join(img_base_path, x.split('\t')[1]) for x in content]
     num_test_images = cfg["DATA"].NUM_TEST_IMAGES
     classes = cfg["DATA"].CLASSES
+    str_labels = load_class_labels(cfg["DATA"].CLASS_MAP_FILE)
     image_input = input_variable(shape=(cfg.NUM_CHANNELS, cfg.IMAGE_HEIGHT, cfg.IMAGE_WIDTH),
                                  dynamic_axes=[Axis.default_batch_axis()],
                                  name=cfg["MODEL"].FEATURE_NODE_NAME)
@@ -131,7 +132,7 @@ def compute_test_set_aps(eval_model, cfg):
             print("Processed {} samples".format(img_i+1))
             
         img_path = img_file_names[img_i]
-        save_rois_to_file(regressed_rois, nms_keep_indices, labels, classes, scores,
+        save_rois_to_file(regressed_rois, nms_keep_indices, labels, str_labels, scores,
                           results_base_path, img_path, headers=True, output_width_height=False,
                           suppressed_labels=(), dims=None)
 
@@ -216,3 +217,20 @@ def save_rois_to_file(regressed_rois, nms_keep_indices, labels, str_labels, scor
                     os.path.basename(img_path),
                     x0, y0, x1, y1,
                     labels[index], str_labels[labels[index]], scores[index]))
+
+def load_class_labels(class_map_file):
+    """
+    Loads the labels from the class map file and stores them
+    in a dictionary with their label index as the key.
+
+    :param class_map_file: the file with the class map (label<TAB>index)
+    :type class_map_file: str
+    :return: the label dictionary
+    :rtype: dict
+    """
+    result = {}
+    with open(class_map_file, 'r') as map:
+        for line in map.readlines():
+            label, num = line.split("\t")
+            result[int(num)] = label
+    return result
