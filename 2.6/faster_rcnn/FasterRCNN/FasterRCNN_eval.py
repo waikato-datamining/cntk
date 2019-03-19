@@ -48,6 +48,11 @@ class FasterRCNN_Evaluator:
 
 def compute_test_set_aps(eval_model, cfg):
     results_base_path = os.path.join(cfg.OUTPUT_PATH, cfg["DATA"].DATASET)
+    # get image paths
+    with open(cfg["DATA"].TEST_MAP_FILE) as f:
+        content = f.readlines()
+    img_base_path = os.path.dirname(os.path.abspath(cfg["DATA"].TEST_MAP_FILE))
+    img_file_names = [os.path.join(img_base_path, x.split('\t')[1]) for x in content]
     num_test_images = cfg["DATA"].NUM_TEST_IMAGES
     classes = cfg["DATA"].CLASSES
     image_input = input_variable(shape=(cfg.NUM_CHANNELS, cfg.IMAGE_HEIGHT, cfg.IMAGE_WIDTH),
@@ -125,6 +130,7 @@ def compute_test_set_aps(eval_model, cfg):
         if (img_i+1) % 100 == 0:
             print("Processed {} samples".format(img_i+1))
             
+        img_path = img_file_names[img_i]
         save_rois_to_file(regressed_rois, nms_keep_indices, labels, classes, scores,
                           results_base_path, img_path, headers=True, output_width_height=False,
                           suppressed_labels=(), dims=None)
