@@ -71,6 +71,42 @@ __C.DRAW_UNREGRESSED_ROIS = False
 __C.RESULTS_BGR_PLOT_THRESHOLD = 0.1
 
 #
+# Base models
+#
+__C.MODEL = edict()
+if __C.MODEL.BASE_MODEL == "AlexNet":
+    __C.MODEL.BASE_MODEL_FILE = "AlexNet_ImageNet_Caffe.model"
+    __C.MODEL.IMG_PAD_COLOR = [114, 114, 114]
+    __C.MODEL.FEATURE_NODE_NAME = "data"
+    __C.MODEL.LAST_CONV_NODE_NAME = "relu5"
+    __C.MODEL.START_TRAIN_CONV_NODE_NAME = __C.MODEL.FEATURE_NODE_NAME
+    __C.MODEL.POOL_NODE_NAME = "pool5"
+    __C.MODEL.LAST_HIDDEN_NODE_NAME = "drop7"
+    __C.MODEL.FEATURE_STRIDE = 16
+    __C.MODEL.RPN_NUM_CHANNELS = 256
+    __C.MODEL.ROI_DIM = 6
+    __C.MODEL.E2E_LR_FACTOR = 1.0
+    __C.MODEL.RPN_LR_FACTOR = 1.0
+    __C.MODEL.FRCN_LR_FACTOR = 1.0
+
+if __C.MODEL.BASE_MODEL == "VGG16":
+    __C.MODEL.BASE_MODEL_FILE = "VGG16_ImageNet_Caffe.model"
+    __C.MODEL.IMG_PAD_COLOR = [103, 116, 123]
+    __C.MODEL.FEATURE_NODE_NAME = "data"
+    __C.MODEL.LAST_CONV_NODE_NAME = "relu5_3"
+    __C.MODEL.START_TRAIN_CONV_NODE_NAME = "pool2" # __C.MODEL.FEATURE_NODE_NAME
+    __C.MODEL.POOL_NODE_NAME = "pool5"
+    __C.MODEL.LAST_HIDDEN_NODE_NAME = "drop7"
+    __C.MODEL.FEATURE_STRIDE = 16
+    __C.MODEL.RPN_NUM_CHANNELS = 512
+    __C.MODEL.ROI_DIM = 7
+    ## Try changing `LR_FACTOR` parameters, if the training does not converge. 
+    ## Ex.) For Grocery dataset, it may be better to set it to 0.1
+    __C.MODEL.E2E_LR_FACTOR = 1.0
+    __C.MODEL.RPN_LR_FACTOR = 1.0
+    __C.MODEL.FRCN_LR_FACTOR = 1.0
+
+#
 # Training parameters
 #
 
@@ -146,3 +182,26 @@ __C.USE_GPU_NMS = False
 
 # Default GPU device id
 __C.GPU_ID = 0
+
+# overwriting proposal parameters for Fast R-CNN
+# minimum relative width/height of an ROI
+__C.roi_min_side_rel = 0.04
+# maximum relative width/height of an ROI
+__C.roi_max_side_rel = 0.4
+# minimum relative area of an ROI
+__C.roi_min_area_rel = 2 * __C.roi_min_side_rel * __C.roi_min_side_rel
+# maximum relative area of an ROI
+__C.roi_max_area_rel = 0.33 * __C.roi_max_side_rel * __C.roi_max_side_rel
+# maximum aspect ratio of an ROI vertically and horizontally
+__C.roi_max_aspect_ratio = 4.0
+
+# For this data set use the following lr factor for Fast R-CNN:
+# __C.CNTK.LR_FACTOR = 10.0
+
+def cfg_from_file(filename):
+    """Load a config file and merge it into the default options."""
+    import yaml
+    with open(filename, 'r') as f:
+        yaml_cfg = edict(yaml.load(f))
+
+    return yaml_cfg
