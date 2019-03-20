@@ -16,18 +16,6 @@ from utils.plot_helpers import plot_test_set_results
 from FasterRCNN_config import cfg as detector_cfg
 from FasterRCNN_config import cfg_from_file
 
-def get_configuration():
-    # load configs for detector, base network and data set
-    from FasterRCNN_config import cfg as detector_cfg
-    # for VGG16 base model use:         from utils.configs.VGG16_config import cfg as network_cfg
-    # for AlexNet base model use:       from utils.configs.AlexNet_config import cfg as network_cfg
-    from utils.configs.AlexNet_config import cfg as network_cfg
-    # for Pascal VOC 2007 data set use: from utils.configs.Pascal_config import cfg as dataset_cfg
-    # for the Grocery data set use:     from utils.configs.Grocery_config import cfg as dataset_cfg
-    from utils.configs.Grocery_config import cfg as dataset_cfg
-
-    return merge_configs([detector_cfg, network_cfg, dataset_cfg])
-
 def set_vars():
     parser = argparse.ArgumentParser()
     parser.add_argument('-c', '--config', help='Config file in YAML format', required=True, default=None)
