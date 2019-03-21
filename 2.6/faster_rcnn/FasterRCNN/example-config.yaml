@@ -1,0 +1,50 @@
+INPUT_ROIS_PER_IMAGE: 50
+IMAGE_WIDTH: 850
+IMAGE_HEIGHT: 850
+VISUALIZE_RESULTS: false
+RND_SEED: 3
+
+CNTK:
+    MAKE_MODE: true
+    FORCE_DETERMINISTIC: true
+    E2E_MAX_EPOCHS: 20
+    
+MODEL:
+    FEATURE_NODE_NAME: data
+    POOL_NODE_NAME: pool5
+    LAST_HIDDEN_NODE_NAME: drop7
+    FEATURE_STRIDE: 16
+    # Try changing `LR_FACTOR` parameters, if the training does not converge. 
+    # Ex.) For Grocery dataset, it may be better to set it to 0.1
+    E2E_LR_FACTOR: 1.0
+    RPN_LR_FACTOR: 1.0
+    FRCN_LR_FACTOR: 1.0
+    
+    #Comment/Uncomment base models
+    BASE_MODEL: VGG16
+    BASE_MODEL_FILE: VGG16_ImageNet_Caffe.model
+    IMG_PAD_COLOR: [103, 116, 123]
+    LAST_CONV_NODE_NAME: relu5_3
+    START_TRAIN_CONV_NODE_NAME: pool2 # FEATURE_NODE_NAME
+    RPN_NUM_CHANNELS: 512
+    ROI_DIM: 7
+    
+#    BASE_MODEL: AlexNet
+#    BASE_MODEL_FILE: AlexNet_ImageNet_Caffe.model
+#    IMG_PAD_COLOR: [114, 114, 114]
+#    LAST_CONV_NODE_NAME: relu5
+#    START_TRAIN_CONV_NODE_NAME: data
+#    RPN_NUM_CHANNELS: 256
+#    ROI_DIM: 6
+    
+DATA:
+    DATASET: red_stained
+    MAP_FILE_PATH: /test/DataSets/red_stained
+    NUM_TEST_IMAGES: 1
+    NUM_TRAIN_IMAGES: 71
+    PROPOSAL_LAYER_SCALES: [4, 8, 12]
+    CLASS_MAP_FILE: class_map.txt
+    TEST_MAP_FILE: test_img_file.txt
+    TEST_ROI_FILE: test_roi_file.txt
+    TRAIN_MAP_FILE: train_img_file.txt
+    TRAIN_ROI_FILE: train_roi_file.txt
