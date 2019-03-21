@@ -17,6 +17,7 @@ from FasterRCNN_config import cfg as detector_cfg
 from FasterRCNN_config import cfg_from_file
 
 def set_vars():
+    global args
     parser = argparse.ArgumentParser()
     parser.add_argument('-c', '--config', help='Config file in YAML format', required=True, default=None)
     args = vars(parser.parse_args())
