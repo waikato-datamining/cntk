@@ -218,3 +218,4 @@ def setup(cfg):
         
     if cfg.ADAMS.TRAINED_MODEL.REMOTE != "":
         #TODO
+    return
