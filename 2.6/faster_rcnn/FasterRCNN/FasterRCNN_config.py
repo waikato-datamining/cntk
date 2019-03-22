@@ -207,9 +207,9 @@ def setup(cfg):
         command = "mkdir -p " + cfg.ADAMS.DATASET.LOCAL + " && cd " + cfg.ADAMS.DATASET.LOCAL + " && wget -nc " + cfg.ADAMS.PRETRAINED_MODEL.REMOTE
         if cfg.ADAMS.DATASET.FORMAT == "zip":
             command += " && unzip *.zip"
-        else if cfg.ADAMS.DATASET.FORMAT == "tar":
+        elif cfg.ADAMS.DATASET.FORMAT == "tar":
             command += " && tar -xvf *.tar"
-        else if cfg.ADAMS.DATASET.FORMAT == "tar.gz":
+        elif cfg.ADAMS.DATASET.FORMAT == "tar.gz":
             command += " && tar -xzvf *.tar.gz"
         else:
             print("Error: Unsupported archive file for dataset, it should be tar | tar.gz | zip. EXITING ")
