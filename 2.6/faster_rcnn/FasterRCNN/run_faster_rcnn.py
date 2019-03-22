@@ -14,7 +14,7 @@ from utils.config_helpers import merge_configs
 from utils.plot_helpers import plot_test_set_results
 
 from FasterRCNN_config import cfg as detector_cfg
-from FasterRCNN_config import cfg_from_file
+from FasterRCNN_config import cfg_from_file, setup
 
 def set_vars():
     global args
@@ -28,6 +28,7 @@ if __name__ == '__main__':
     yaml_config = cfg_from_file(args['config'])
     cfg = merge_configs([detector_cfg, yaml_config])
     prepare(cfg, False)
+    setup(cfg)
     cntk.device.try_set_default_device(cntk.device.gpu(cfg.GPU_ID))
 
     # train and test

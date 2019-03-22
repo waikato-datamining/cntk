@@ -133,6 +133,31 @@ __C.TEST.RPN_POST_NMS_TOP_N = 300
 # Proposal height and width both need to be greater than RPN_MIN_SIZE (at orig image scale)
 __C.TEST.RPN_MIN_SIZE = 16
 
+#
+# ADAMS parameters
+#
+
+__C.ADAMS = edict()
+__C.ADAMS.PRETRAINED_MODEL = edict()
+__C.ADAMS.DATASET = edict()
+__C.ADAMS.TRAINED_MODEL = edict()
+
+# Remote URL to download the pretrained model from
+__C.ADAMS.PRETRAINED_MODEL.REMOTE = ""
+# Local path to download the pretrained model to
+__C.ADAMS.PRETRAINED_MODEL.LOCAL = ""
+# Remote URL to download the dataset from
+__C.ADAMS.DATASET.REMOTE = ""
+# Local path to download the dataset to
+__C.ADAMS.DATASET.LOCAL = ""
+# Format of downloaded dataset file
+__C.ADAMS.DATASET.FORMAT = ""   # zip/tar/tar.gz ...etc
+# Remote URL to upload the trained model to
+__C.ADAMS.TRAINED_MODEL.REMOTE = ""
+# Local path to store the trained model to
+__C.ADAMS.TRAINED_MODEL.LOCAL = ""
+# Type of file transfer protocol
+__C.ADAMS.TRAINED_MODEL.TYPE = ""   # SFTP/Rest ...etc or leave empty for no model upload
 
 #
 # MISC
@@ -163,9 +188,33 @@ __C.roi_max_aspect_ratio = 4.0
 # __C.CNTK.LR_FACTOR = 10.0
 
 def cfg_from_file(filename):
-    """Load a config file and merge it into the default options."""
+    """Load a config file and return it."""
     import yaml
     with open(filename, 'r') as f:
         yaml_cfg = edict(yaml.load(f))
 
     return yaml_cfg
+    
+def setup(cfg):
+    """Setting up dataset, pretrained model, and trained model."""
+    import os
+    
+    if cfg.ADAMS.PRETRAINED_MODEL.REMOTE != "":
+        command = "mkdir -p " + cfg.ADAMS.PRETRAINED_MODEL.LOCAL + " && cd " + cfg.ADAMS.PRETRAINED_MODEL.LOCAL + " && wget -nc " + cfg.ADAMS.PRETRAINED_MODEL.REMOTE
+        os.system(command)
+        
+    if cfg.ADAMS.DATASET.REMOTE != "":
+        command = "mkdir -p " + cfg.ADAMS.DATASET.LOCAL + " && cd " + cfg.ADAMS.DATASET.LOCAL + " && wget -nc " + cfg.ADAMS.PRETRAINED_MODEL.REMOTE
+        if cfg.ADAMS.DATASET.FORMAT == "zip":
+            command += " && unzip *.zip"
+        else if cfg.ADAMS.DATASET.FORMAT == "tar":
+            command += " && tar -xvf *.tar"
+        else if cfg.ADAMS.DATASET.FORMAT == "tar.gz":
+            command += " && tar -xzvf *.tar.gz"
+        else:
+            print("Error: Unsupported archive file for dataset, it should be tar | tar.gz | zip. EXITING ")
+            quit()
+        os.system(command)
+        
+    if cfg.ADAMS.TRAINED_MODEL.REMOTE != "":
+        #TODO

@@ -48,3 +48,16 @@ DATA:
     TEST_ROI_FILE: test_roi_file.txt
     TRAIN_MAP_FILE: train_img_file.txt
     TRAIN_ROI_FILE: train_roi_file.txt
+    
+ADAMS:
+    PRETRAINED_MODEL:
+        REMOTE: https://www.cntk.ai/Models/Caffe_Converted/VGG16_ImageNet_Caffe.model
+        LOCAL: /opt/cntk/2.6/faster_rcnn/FasterRCNN/PretrainedModels
+    DATASET:
+        REMOTE:
+        LOCAL: /opt/cntk/2.6/faster_rcnn/DataSets/
+        FORMAT: tar.gz
+    TRAINED_MODEL:
+        REMOTE:
+        LOCAL:
+        TYPE: SFTP
