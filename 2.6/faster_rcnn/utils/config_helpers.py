@@ -1,4 +1,5 @@
 from easydict import EasyDict
+import numpy as np
 
 def merge_configs(config_list):
     if config_list == None or len(config_list) == 0:
