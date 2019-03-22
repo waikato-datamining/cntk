@@ -216,6 +216,6 @@ def setup(cfg):
             quit()
         os.system(command)
         
-    if cfg.ADAMS.TRAINED_MODEL.REMOTE != "":
+    #if cfg.ADAMS.TRAINED_MODEL.REMOTE != "":
         #TODO
     return
