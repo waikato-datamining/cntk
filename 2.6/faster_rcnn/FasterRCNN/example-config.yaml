@@ -39,7 +39,7 @@ MODEL:
     
 DATA:
     DATASET: red_stained
-    MAP_FILE_PATH: /test/DataSets/red_stained
+    MAP_FILE_PATH: /opt/cntk/2.6/faster_rcnn/DataSets/red_stained
     NUM_TEST_IMAGES: 1
     NUM_TRAIN_IMAGES: 71
     PROPOSAL_LAYER_SCALES: [4, 8, 12]
