@@ -196,7 +196,7 @@ def cfg_from_file(filename):
     return yaml_cfg
     
 def setup(cfg):
-    """Setting up dataset, pretrained model, and trained model."""
+    """Setting up dataset and pretrained model."""
     import os
     
     if cfg.ADAMS.PRETRAINED_MODEL.REMOTE != "":
@@ -215,8 +215,13 @@ def setup(cfg):
             print("Error: Unsupported archive file for dataset, it should be tar | tar.gz | zip. EXITING ")
             quit()
         os.system(command)
-        
+    return
+    
+def copy_trained_model(cfg):
+    import os
+    
     if cfg.ADAMS.TRAINED_MODEL.TYPE != "":
         if cfg.ADAMS.TRAINED_MODEL.TYPE == "local":
             command = "mkdir -p " + cfg.ADAMS.TRAINED_MODEL.LOCAL + " && cd " + cfg.ADAMS.TRAINED_MODEL.LOCAL + " && cp " + cfg.MODEL_PATH + " ."
+        os.system(command)
     return

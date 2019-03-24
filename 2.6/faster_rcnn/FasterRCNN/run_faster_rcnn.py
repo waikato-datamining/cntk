@@ -14,7 +14,7 @@ from utils.config_helpers import merge_configs
 from utils.plot_helpers import plot_test_set_results
 
 from FasterRCNN_config import cfg as detector_cfg
-from FasterRCNN_config import cfg_from_file, setup
+from FasterRCNN_config import cfg_from_file, setup, copy_trained_model
 
 def set_vars():
     global args
@@ -39,6 +39,9 @@ if __name__ == '__main__':
     for class_name in eval_results: print('AP for {:>15} = {:.4f}'.format(class_name, eval_results[class_name]))
     print('Mean AP = {:.4f}'.format(np.nanmean(list(eval_results.values()))))
 
+    # copy trained model to specified location in config YAML file
+    copy_trained_model(cfg)
+    
     # Plot results on test set images
     if cfg.VISUALIZE_RESULTS:
         num_eval = min(cfg["DATA"].NUM_TEST_IMAGES, 100)
