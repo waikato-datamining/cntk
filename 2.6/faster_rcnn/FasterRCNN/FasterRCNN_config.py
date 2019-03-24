@@ -216,6 +216,7 @@ def setup(cfg):
             quit()
         os.system(command)
         
-    #if cfg.ADAMS.TRAINED_MODEL.REMOTE != "":
-        #TODO
+    if cfg.ADAMS.TRAINED_MODEL.TYPE != "":
+        if cfg.ADAMS.TRAINED_MODEL.TYPE == "local":
+            command = "mkdir -p " + cfg.ADAMS.TRAINED_MODEL.LOCAL + " && cd " + cfg.ADAMS.TRAINED_MODEL.LOCAL + " && cp " + cfg.MODEL_PATH + " ."
     return
