@@ -5,6 +5,7 @@ VISUALIZE_RESULTS: false
 RND_SEED: 3
 
 CNTK:
+    # Set to "true" to skip training if trained model exists
     MAKE_MODE: true
     FORCE_DETERMINISTIC: true
     E2E_MAX_EPOCHS: 20
@@ -51,13 +52,19 @@ DATA:
     
 ADAMS:
     PRETRAINED_MODEL:
+        # URL to download the pretrained model from
         REMOTE: https://www.cntk.ai/Models/Caffe_Converted/VGG16_ImageNet_Caffe.model
+        # Local path to store the pretrained model
         LOCAL: /opt/cntk/2.6/faster_rcnn/FasterRCNN/PretrainedModels
     DATASET:
+        # URL to download the dataset from
         REMOTE:
+        # Local path to store the dataset
         LOCAL: /opt/cntk/2.6/faster_rcnn/DataSets/
         FORMAT: tar.gz
     TRAINED_MODEL:
-        REMOTE:
-        LOCAL:
-        TYPE: SFTP
+        # URL to upload the trained model to, used when TYPE is not None or local
+        #REMOTE:
+        # Local path to copy the trained model to, used when TYPE is set to "local"
+        LOCAL: /test/Output/red_stained/
+        TYPE: local
