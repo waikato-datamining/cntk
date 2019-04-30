@@ -8,6 +8,8 @@ import numpy as np
 import CNTKDeserializerUtils
 
 # Numeric type to use for numeric data
+import onehot
+
 NUMERIC_TYPE = np.float32
 
 # The number of rows to process as a batch in parallel mode
@@ -203,8 +205,8 @@ class ARFFFile:
         attribute = self.normalise_attribute_reference(attribute)
 
         # Make sure the attribute is of type string
-        attributeType = self.attributes[attribute]['type']
-        if attributeType != STRING_KEYWORD and attributeType != NOMINAL_KEYWORD:
+        attribute_type = self.attributes[attribute]['type']
+        if attribute_type != STRING_KEYWORD and attribute_type != NOMINAL_KEYWORD:
             return None, None
 
         # Create the map
@@ -220,6 +222,14 @@ class ARFFFile:
 
         # Return the map
         return index_map, string_table
+
+    def one_hot_encode(self):
+        """
+        Applies a one-hot encoding to all nominal attributes in the file.
+
+        :return:    The mapping used to perform the encoding.
+        """
+        return one_hot_encode(self)
 
     def normalise_attribute_reference(self, attribute):
         """
@@ -772,6 +782,74 @@ def line_starts_with(line, string, case_insensitive=True):
 
     # Return the result of the check
     return line.startswith(string)
+
+
+def one_hot_encode(arff_file):
+    """
+    Modifies the ARFF file to encode its nominal attributes as numeric attributes
+    using one-hot encoding.
+
+    :param arff_file:   The ARFFFile object to modify.
+    :return:            The number of class attributes after one-hot encoding.
+    """
+
+    # Create the mapping from nominal to numeric attributes
+    one_hot_map = create_one_hot_map(arff_file.attributes)
+
+    # Apply the mapping to the attributes
+    arff_file.attributes = one_hot_encode_attributes(arff_file.attributes, one_hot_map)
+
+    # Apply the mapping to the data
+    one_hot_map.encode(arff_file.data)
+
+    # Return the one-hot encoding
+    return one_hot_map
+
+
+def create_one_hot_map(attributes):
+    """
+    Creates a list of one-hot encoding maps for the given attributes.
+
+    :param attributes:  The attributes being encoded.
+    :return:            The list of one-hot mappings.
+    """
+
+    # Create the map
+    one_hot_map = onehot.Mapping(len(attributes))
+
+    # Process each attribute
+    for attribute_index, attribute in enumerate(attributes):
+        # If the attribute is nominal, add a mapping from value name to encoding
+        if attribute['type'] == NOMINAL_KEYWORD:
+            values = attribute['values']
+
+            # Append the mapping structure to the one-hot map
+            one_hot_map.add_encoding(attribute_index, onehot.Encoding(values, NUMERIC_TYPE))
+
+    # Return the map
+    return one_hot_map
+
+
+def one_hot_encode_attributes(attributes, one_hot_map):
+    """
+    Uses the one-hot encoding map to modify the given attribute list into its
+    one-hot encoded form.
+
+    :param attributes:      The attributes to encode.
+    :param one_hot_map:     The one-hot encoding map to use for the encoding.
+    :return:                The encoded list of attributes.
+    """
+
+    attribute_names = [attribute['name'] for attribute in attributes]
+    attribute_lookup = {attribute['name']: attribute for attribute in attributes}
+
+    new_names = one_hot_map.encode_header(attribute_names)
+
+    for name in new_names:
+        if name not in attribute_lookup:
+            attribute_lookup[name] = {'name': name, 'type': NUMERIC_KEYWORD}
+
+    return [attribute_lookup[name] for name in new_names]
 
 
 class ARFFFileError(Exception):

@@ -1,7 +1,6 @@
 from cntk.io import UserDeserializer
 
-import onehot
-from ARFFFile import NOMINAL_KEYWORD, NUMERIC_KEYWORD, NUMERIC_TYPE
+from ARFFFile import NOMINAL_KEYWORD, NUMERIC_KEYWORD
 import CNTKDeserializerUtils
 
 
@@ -30,7 +29,7 @@ class ARFFDeserializer(UserDeserializer):
         check_attribute_types(stream_indices, arff_file.attributes)
 
         # One-hot encode the file
-        one_hot_map = one_hot_encode(arff_file)
+        one_hot_map = arff_file.one_hot_encode()
 
         # Apply the one-hot encoding to the stream attribute selection
         stream_indices = [(name, one_hot_map.encode_column_selection(indices))
@@ -108,74 +107,6 @@ def check_attribute_types(stream_indices, attributes):
         # If it's not numeric or nominal, raise an exception
         if attribute_type != NOMINAL_KEYWORD and attribute_type != NUMERIC_KEYWORD:
             raise UnsupportedAttributeTypeError(attribute_type)
-
-
-def one_hot_encode(arff_file):
-    """
-    Modifies the ARFF file to encode its nominal attributes as numeric attributes
-    using one-hot encoding.
-
-    :param arff_file:   The ARFFFile object to modify.
-    :return:            The number of class attributes after one-hot encoding.
-    """
-
-    # Create the mapping from nominal to numeric attributes
-    one_hot_map = create_one_hot_map(arff_file.attributes)
-
-    # Apply the mapping to the attributes
-    arff_file.attributes = one_hot_encode_attributes(arff_file.attributes, one_hot_map)
-
-    # Apply the mapping to the data
-    one_hot_map.encode(arff_file.data)
-
-    # Return the one-hot encoding
-    return one_hot_map
-
-
-def create_one_hot_map(attributes):
-    """
-    Creates a list of one-hot encoding maps for the given attributes.
-
-    :param attributes:  The attributes being encoded.
-    :return:            The list of one-hot mappings.
-    """
-
-    # Create the map
-    one_hot_map = onehot.Mapping(len(attributes))
-
-    # Process each attribute
-    for attribute_index, attribute in enumerate(attributes):
-        # If the attribute is nominal, add a mapping from value name to encoding
-        if attribute['type'] == NOMINAL_KEYWORD:
-            values = attribute['values']
-
-            # Append the mapping structure to the one-hot map
-            one_hot_map.add_encoding(attribute_index, onehot.Encoding(values, NUMERIC_TYPE))
-
-    # Return the map
-    return one_hot_map
-
-
-def one_hot_encode_attributes(attributes, one_hot_map):
-    """
-    Uses the one-hot encoding map to modify the given attribute list into its
-    one-hot encoded form.
-
-    :param attributes:      The attributes to encode.
-    :param one_hot_map:     The one-hot encoding map to use for the encoding.
-    :return:                The encoded list of attributes.
-    """
-
-    attribute_names = [attribute['name'] for attribute in attributes]
-    attribute_lookup = {attribute['name']: attribute for attribute in attributes}
-
-    new_names = one_hot_map.encode_header(attribute_names)
-
-    for name in new_names:
-        if name not in attribute_lookup:
-            attribute_lookup[name] = {'name': name, 'type': NUMERIC_KEYWORD}
-
-    return [attribute_lookup[name] for name in new_names]
 
 
 def create_stream_index_map(arff_file, streams):
