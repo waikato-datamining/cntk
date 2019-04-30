@@ -4,13 +4,13 @@ from multiprocessing.pool import Pool
 
 import numpy as np
 
-# The data-type to use for numeric values
-import CNTKDeserializerUtils
 
 # Numeric type to use for numeric data
+import CNTKDeserializerUtils
 import onehot
 
-NUMERIC_TYPE = np.float32
+# The data-type to use for numeric values
+DEFAULT_NUMERIC_TYPE = np.float32
 
 # The number of rows to process as a batch in parallel mode
 PARALLEL_BATCH_SIZE = 64
@@ -95,7 +95,7 @@ class ARFFFile:
     Currently does not handle relational attributes or date formats.
     """
 
-    def __init__(self, filename, encoding='utf-8', parallel=False):
+    def __init__(self, filename, encoding='utf-8', parallel=False, numeric_type=DEFAULT_NUMERIC_TYPE):
         # Select the open method based on the filename
         open_func, mode = CNTKDeserializerUtils.get_open_func(filename)
 
@@ -103,7 +103,7 @@ class ARFFFile:
         with open_func(filename, mode, encoding=encoding) as file:
             # Get the relation and attributes
             self.relation = get_relation_section(file)
-            self.attributes = get_attribute_section(file)
+            self.attributes = get_attribute_section(file, numeric_type)
 
             # Select the data-reading method (serial or parallel)
             data_section_method = get_data_section_parallel if parallel else get_data_section
@@ -163,13 +163,14 @@ class ARFFFile:
         """
         return len(self.attributes)
 
-    def map_string_attribute(self, attribute):
+    def map_string_attribute(self, attribute, numeric_type=DEFAULT_NUMERIC_TYPE):
         """
         Converts a string attribute to a numerical attribute where each entry is
         the index of the original string in a lookup table.
 
-        :param attribute:   The string attribute to map.
-        :return:            The lookup table.
+        :param attribute:       The string attribute to map.
+        :param numeric_type:    The data-type to use for numeric values.
+        :return:                The lookup table.
         """
 
         # Normalise the attribute reference
@@ -184,10 +185,11 @@ class ARFFFile:
 
         # Change the attribute type
         self.attributes[attribute]['type'] = NUMERIC_KEYWORD
+        self.attributes[attribute]['datatype'] = numeric_type
 
         # Apply the mapping to the data
         for row in self.data:
-            row[attribute] = NUMERIC_TYPE(index_map[row[attribute]])
+            row[attribute] = numeric_type(index_map[row[attribute]])
 
         # Return the lookup table
         return string_table
@@ -229,7 +231,33 @@ class ARFFFile:
 
         :return:    The mapping used to perform the encoding.
         """
-        return one_hot_encode(self)
+
+        # Create the mapping from nominal to numeric attributes
+        one_hot_map = create_one_hot_map(self.attributes)
+
+        # Apply the mapping to the attributes
+        self.attributes = one_hot_encode_attributes(self.attributes, one_hot_map)
+
+        # Apply the mapping to the data
+        one_hot_map.encode(self.data)
+
+        # Return the one-hot encoding
+        return one_hot_map
+
+    def extract_data(self, selection):
+        """
+        Extracts the data for a selection of numeric attributes.
+
+        :param selection:   The selection of attributes.
+        :return:            The numeric data.
+        """
+
+        # Get the selected attribute indices
+        selection_indices = self.select_attribute_indices(selection)
+
+        # Extract the selected attributes from the data
+        return [CNTKDeserializerUtils.extract_by_index(row, selection_indices)
+                for row in self.data]
 
     def normalise_attribute_reference(self, attribute):
         """
@@ -264,12 +292,13 @@ def get_relation_section(file):
     return relation
 
 
-def get_attribute_section(file):
+def get_attribute_section(file, numeric_type):
     """
     Gets the list of attributes in the ARFF file.
 
-    :param file:    The ARFF file being processed.
-    :return:        The list of attributes in the file.
+    :param file:            The ARFF file being processed.
+    :param numeric_type:    The data-type to use for numeric values.
+    :return:                The list of attributes in the file.
     """
 
     # Create the empty list of attributes
@@ -279,7 +308,7 @@ def get_attribute_section(file):
     line = read_till_found(file, {ATTRIBUTE_KEYWORD, DATA_KEYWORD})
     while not line_starts_with(line, DATA_KEYWORD):
         # Parse the @attribute line
-        attribute = parse_attribute_line(line)
+        attribute = parse_attribute_line(line, numeric_type)
 
         # Add it to the list
         attributes.append(attribute)
@@ -395,12 +424,13 @@ def parse_relation_line(line):
     return remove_quotes(relation)
 
 
-def parse_attribute_line(line):
+def parse_attribute_line(line, numeric_type):
     """
     Parses an attribute line from the ARFF file into an attribute object.
 
-    :param line:    The line (beginning with @attribute) to parse.
-    :return:        The attribute object.
+    :param line:            The line (beginning with @attribute) to parse.
+    :param numeric_type     The data-type to use for numeric attributes.
+    :return:                The attribute object.
     """
 
     # Save the original line for error messages
@@ -428,16 +458,16 @@ def parse_attribute_line(line):
         raise UnrecognisedContentError(line, original_line)
 
     # Return the attribute and its type (with any additional info)
-    return create_attribute_object(name, attribute_type, additional)
+    return create_attribute_object(name, attribute_type, additional, numeric_type)
 
 
 def parse_data_row_line(line, attributes):
     """
     Parses a line of data from the @data section of the ARFF file.
 
-    :param line:        The line of data to parse.
-    :param attributes:  The attributes of the ARFF file.
-    :return:            A list of data values.
+    :param line:            The line of data to parse.
+    :param attributes:      The attributes of the ARFF file.
+    :return:                A list of data values.
     """
 
     # Save the original line for error messages
@@ -493,7 +523,7 @@ def parse_data_row_line(line, attributes):
 
         # Convert numeric types into the defined internal type
         if attribute_type == NUMERIC_KEYWORD:
-            value = NUMERIC_TYPE(value)
+            value = attribute['datatype'](value)
 
         elif attribute_type == NOMINAL_KEYWORD:
             # Check the string is one of the allowed values
@@ -551,13 +581,14 @@ def consume_attribute_type_information(line):
     return attribute_type, additional, line
 
 
-def create_attribute_object(name, attribute_type, additional):
+def create_attribute_object(name, attribute_type, additional, numeric_type):
     """
     Creates an attribute object for the given attribute information.
 
     :param name:            The name of the attribute.
     :param attribute_type:  The type of the attribute.
     :param additional:      The additional information about the attribute.
+    :param numeric_type:    The data-type to use for numeric values.
     :return:                A dictionary representing the attribute.
     """
 
@@ -572,6 +603,10 @@ def create_attribute_object(name, attribute_type, additional):
         attribute_object['format'] = parse_date_format(additional)
     elif attribute_type == NUMERIC_KEYWORD and additional is not None:
         attribute_object['sub-type'] = additional
+
+    # Save the numeric data-type for numeric attributes
+    if attribute_type == NUMERIC_KEYWORD:
+        attribute_object['datatype'] = numeric_type
 
     # Return the dictionary
     return attribute_object
@@ -784,34 +819,13 @@ def line_starts_with(line, string, case_insensitive=True):
     return line.startswith(string)
 
 
-def one_hot_encode(arff_file):
-    """
-    Modifies the ARFF file to encode its nominal attributes as numeric attributes
-    using one-hot encoding.
-
-    :param arff_file:   The ARFFFile object to modify.
-    :return:            The number of class attributes after one-hot encoding.
-    """
-
-    # Create the mapping from nominal to numeric attributes
-    one_hot_map = create_one_hot_map(arff_file.attributes)
-
-    # Apply the mapping to the attributes
-    arff_file.attributes = one_hot_encode_attributes(arff_file.attributes, one_hot_map)
-
-    # Apply the mapping to the data
-    one_hot_map.encode(arff_file.data)
-
-    # Return the one-hot encoding
-    return one_hot_map
-
-
-def create_one_hot_map(attributes):
+def create_one_hot_map(attributes, numeric_type=DEFAULT_NUMERIC_TYPE):
     """
     Creates a list of one-hot encoding maps for the given attributes.
 
-    :param attributes:  The attributes being encoded.
-    :return:            The list of one-hot mappings.
+    :param attributes:      The attributes being encoded.
+    :param numeric_type:    The data-type to use for numeric values.
+    :return:                The list of one-hot mappings.
     """
 
     # Create the map
@@ -824,7 +838,7 @@ def create_one_hot_map(attributes):
             values = attribute['values']
 
             # Append the mapping structure to the one-hot map
-            one_hot_map.add_encoding(attribute_index, onehot.Encoding(values, NUMERIC_TYPE))
+            one_hot_map.add_encoding(attribute_index, onehot.Encoding(values, numeric_type))
 
     # Return the map
     return one_hot_map

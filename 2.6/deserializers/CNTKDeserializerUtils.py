@@ -2,7 +2,6 @@ import gzip
 import re
 from sre_parse import Pattern
 
-import cntk
 import numpy as np
 
 
@@ -22,11 +21,12 @@ def to_cntk_stream_infos(stream_indices):
     for i, stream_indices_pair in enumerate(stream_indices):
         name = stream_indices_pair[0]
         indices = stream_indices_pair[1]
-        stream_infos.append(cntk.io.StreamInformation(name,
-                                                      i,
-                                                      'dense',
-                                                      np.float32,
-                                                      (len(indices),)))
+        from cntk.io import StreamInformation
+        stream_infos.append(StreamInformation(name,
+                                              i,
+                                              'dense',
+                                              np.float32,
+                                              (len(indices),)))
 
     # Return the stream infos
     return stream_infos
@@ -79,11 +79,19 @@ def select_column_indices(column_names, num_columns, selection):
                             - An integer specifying a single column index.
                             - A pair of integers specifying an inclusive range of column indices.
                             - A string or Pattern specifying a regex to match against column names.
+                            - A list of any of the above.
     :return:                The list of column indices selected.
     """
 
+    # Process lists by recurse-and-flatten
+    if isinstance(selection, list):
+        to_flatten = [select_column_indices(column_names, num_columns, sub_selection)
+                      for sub_selection in selection]
+
+        return flatten(to_flatten)
+
     # Process integer selections by normalisation
-    if isinstance(selection, int):
+    elif isinstance(selection, int):
         # Return the normalised selection as a list of itself
         return [normalise_array_index(selection, num_columns)]
 
@@ -148,3 +156,20 @@ def normalise_array_index(index, length):
     :return:        The normalised index.
     """
     return index % length
+
+
+def flatten(a_list_of_lists):
+    """
+    Flattens a list of lists into a single list.
+
+    :param a_list_of_lists:     The list of list to flatten.
+    :return:                    The flattened list.
+    """
+
+    flattened_list = []
+
+    for sub_list in a_list_of_lists:
+        for element in sub_list:
+            flattened_list.append(element)
+
+    return flattened_list
