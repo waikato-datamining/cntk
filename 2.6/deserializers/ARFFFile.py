@@ -192,7 +192,8 @@ class ARFFFile:
 
     def create_string_index_map(self, attribute):
         """
-        Creates a mapping from string values to indices for a string attribute.
+        Creates a mapping from string values to indices for a string attribute
+        or a nominal attribute.
 
         :param attribute:   The attribute to map (index or name).
         :return:            The index map for the strings in the given attribute.
@@ -202,7 +203,8 @@ class ARFFFile:
         attribute = self.normalise_attribute_reference(attribute)
 
         # Make sure the attribute is of type string
-        if self.attributes[attribute]['type'] != STRING_KEYWORD:
+        attributeType = self.attributes[attribute]['type']
+        if attributeType != STRING_KEYWORD and attributeType != NOMINAL_KEYWORD:
             return None, None
 
         # Create the map
